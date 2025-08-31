@@ -70,6 +70,12 @@ export async function mealsRoutes(app: FastifyInstance) {
 
       const { userId } = request.cookies;
 
+      const meal = await knex("meals").where({ id, user_id: userId }).first();
+
+      if (!meal) {
+        return reply.status(404).send({ message: "Meal not found" });
+      }
+
       await knex("meals")
         .where({ id, user_id: userId })
         .update({
@@ -89,16 +95,44 @@ export async function mealsRoutes(app: FastifyInstance) {
     { preHandler: [checkUserIdExists] },
     async (request, reply) => {
       const deleteMealParamsSchema = z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
       });
 
       const { id } = deleteMealParamsSchema.parse(request.params);
 
       const { userId } = request.cookies;
 
+      const meal = await knex("meals").where({ id, user_id: userId }).first();
+
+      if (!meal) {
+        return reply.status(404).send({ message: "Meal not found" });
+      }
+
       await knex("meals").where({ id, user_id: userId }).delete();
 
       return reply.status(204).send();
+    }
+  );
+
+  app.get(
+    "/:id",
+    { preHandler: [checkUserIdExists] },
+    async (request, reply) => {
+      const getMealParamsSchema = z.object({
+        id: z.uuid(),
+      });
+
+      const { id } = getMealParamsSchema.parse(request.params);
+
+      const { userId } = request.cookies;
+
+      const meal = await knex("meals").where({ id, user_id: userId }).first();
+
+      if (!meal) {
+        return reply.status(404).send({ message: "Meal not found" });
+      }
+
+      return { meal };
     }
   );
 }
