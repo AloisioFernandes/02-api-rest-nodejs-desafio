@@ -135,4 +135,40 @@ export async function mealsRoutes(app: FastifyInstance) {
       return { meal };
     }
   );
+
+  app.get(
+    "/metrics",
+    { preHandler: [checkUserIdExists] },
+    async (request, reply) => {
+      const { userId } = request.cookies;
+
+      const meals = await knex("meals")
+        .orderBy("meal_time", "asc")
+        .where({ user_id: userId })
+        .select("*");
+
+      const totalMeals = meals.length;
+      const totalMealsOnDiet = meals.filter((meal) => meal.is_on_diet).length;
+      const totalMealsOffDiet = totalMeals - totalMealsOnDiet;
+      let bestSequence = 0;
+      let currentSequence = 0;
+      for (const meal of meals) {
+        if (meal.is_on_diet) {
+          currentSequence += 1;
+          if (currentSequence > bestSequence) {
+            bestSequence = currentSequence;
+          }
+        } else {
+          currentSequence = 0;
+        }
+      }
+
+      return {
+        totalMeals,
+        totalMealsOnDiet,
+        totalMealsOffDiet,
+        bestSequence,
+      };
+    }
+  );
 }
