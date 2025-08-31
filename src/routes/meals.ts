@@ -63,7 +63,8 @@ export async function mealsRoutes(app: FastifyInstance) {
         mealTime: z.iso.datetime().optional(),
       });
 
-      const { name, description, isOnDiet, mealTime } = updateMealBodySchema.parse(request.body);
+      const { name, description, isOnDiet, mealTime } =
+        updateMealBodySchema.parse(request.body);
 
       const { id } = updateMealParamsSchema.parse(request.params);
 
@@ -78,6 +79,24 @@ export async function mealsRoutes(app: FastifyInstance) {
           meal_time: mealTime ? new Date(mealTime).toISOString() : undefined,
           updated_at: new Date().toISOString(),
         });
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete(
+    "/:id",
+    { preHandler: [checkUserIdExists] },
+    async (request, reply) => {
+      const deleteMealParamsSchema = z.object({
+        id: z.string().uuid(),
+      });
+
+      const { id } = deleteMealParamsSchema.parse(request.params);
+
+      const { userId } = request.cookies;
+
+      await knex("meals").where({ id, user_id: userId }).delete();
 
       return reply.status(204).send();
     }
